@@ -26,7 +26,7 @@ class track:
                 self.points.append(point)
 
 
-class wavefront_obj:
+class wavefront_obj(track):
     def __init__(self,file_name):
         self
     
