@@ -12,29 +12,53 @@ bpy.ops.object.delete(use_global=False)
 for item in bpy.data.meshes:
     bpy.data.meshes.remove(item)
 
-class base_obj(self):
+class base_obj():
     def __init__(self,name):
         self.name = name
         self.points=[]
+        self.normals=[]
+        self.faces=[]
+    def fill_point(self,point):
+        if len(point) !=3:
+            print("Can't fill point(",point,")into ",self.name," since it must have 3D !!!!!")
+        else:
+            self.points.append(point) 
     def fill_points(self,points):
         for point in points:
-            if len(point) !=3:
-                print("Can't fill point(",point,")into ",self.name," since it must have 3D !!!!!")
-            else:
-                self.points.append(point)   
+            self.fill_point(point)
+    def fill_normal(self,normal):
+        if len(normal) !=3:
+            print("Can't fill normal(",point,")into ",self.name," since it must have 3D !!!!!")
+        else:
+            try:
+                norm=float(normal[0])**2+float(normal[1])**2+float(normal[2])**2
+                if abs(norm-1.0)>0.001:
+                    print("Attention normal vector length ="+str(norm)+" is not 1.0")
+            except:
+                print("Cout not buid norm of vecotor: "+normal)
+                pass
+
+            print(normal)
+            self.normals.append(normal) 
+
+
 
 class track(base_obj):
     def __init__(self,name,points=[]):
+        super(track, self).__init__(name)
         self.name=name
-        self.points=[]
         self.fill_points(points)
-    def fill_points(self,points):
-        for point in points:
-            if len(point) !=3:
-                print("Can't fill point(",point,")into track: ",self.name," since it must have 3D")
-            else:
-                self.points.append(point)
 
+
+class frustum(base_obj): #something with 8 vertcies and 6 faces. Frustum sounds funny and is not that wrong 
+    def __init__(self,name,points=[]):
+        super(frustum, self).__init__(name)
+        self.name=name
+        if len(points)==8:
+            self.fill_points(points)
+        elif len(points) >0:
+            print("Can't fill points points into frustum since it requires 8 of them!")
+            
 
 class wavefront_obj(track):
     def __init__(self,file_name):
@@ -49,8 +73,22 @@ class wavefront_obj(track):
                 continue
             if akt_line[0] == 'o':
                 if "track" in akt_line:
-                    akt_obj = track(akt_line[2:-1])
-            print(akt_line)
+                    akt_obj = track(akt_line[2:])
+                elif "chamb" in akt_line:
+                    akt_obj = frustum(akt_line[2:])
+                elif "Calo" in akt_line:
+                    akt_obj = frustum(akt_line[2:])
+                else:
+                    akt_obj = None
+                    print("Object "+akt_line[2:]+" not implemented")
+            if not akt_obj:
+                print(akt_line)
+                continue
+            if akt_line[0] == 'v' and akt_line[1] != 'n':
+                akt_obj.fill_point(akt_line.split()[1:])
+            elif akt_line[0] == 'v' and akt_line[1] == 'n':
+                akt_obj.fill_normal(akt_line.split()[1:])
+
 
 
 in_file="../wavefront_obj_files/example/comp_smal.obj"
